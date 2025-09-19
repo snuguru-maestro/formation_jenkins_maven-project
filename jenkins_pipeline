@@ -1,0 +1,54 @@
+pipeline {
+    agent {
+        label "master" 
+    }
+
+    tools {
+        // Install the Maven version configured as "M3" and add it to the path.
+        maven "local_maven"
+    }
+
+    stages {
+        stage('Clone codebase') {
+            steps {
+                echo "Clone"
+                // Get some code from a GitHub repository
+                git (url: 'https://github.com/snuguru-maestro/formation_jenkins_maven-project.git', 
+                branch: 'master',
+                credentialsId: 'formation_jenkins_token'
+                )
+            }
+        }
+        stage('compile and test'){
+            steps {
+                echo "compile and test"
+                withMaven (maven: "local_maven"){
+                    sh 'mvn clean test'
+                }
+            }
+        }
+        stage('build'){
+            steps {
+                echo "build and package"
+                withMaven (maven: "local_maven"){
+                    sh 'mvn -B -DskipTests clean package'
+                }
+                
+            }
+        }
+        stage("sonar analysys"){
+            steps {
+                echo "sonaring"
+                withSonarQubeEnv(installationName: "sonarQ", credentialsId: "sonar_token"){
+                    sh 'mvn sonar:sonar'
+                }
+                
+            }
+        }
+        stage ("archive and deploy"){
+            steps {
+                echo "deploying"
+            }
+        }
+    }
+}
